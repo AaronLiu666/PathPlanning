@@ -7,14 +7,8 @@ import os
 import sys
 import math
 import numpy as np
-
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) +"/../../Sampling_based_Planning/")
-# current_dir = os.path.dirname(os.path.abspath(__file__))
-# sys.path.append(os.path.join(current_dir, ".."))
-
 from rrt_2D import env, plotting, utils
-# from . import env, plotting, utils
-
 
 class Node:
     def __init__(self, n):
@@ -107,7 +101,9 @@ def main():
     path = rrt.planning()
 
     if path:
+        print('Path Found!')
         rrt.plotting.animation(rrt.vertex, path, "RRT", True)
+        
     else:
         print("No Path Found!")
 
