@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
+import time
 
 class Node:
     def __init__(self, x, y):
@@ -11,7 +11,7 @@ class Node:
 
 class RRT:
     # map(-x,x,-y,y)
-    def __init__(self, start, goal, obstacles, max_dist=0.2, max_iter=10000, map=[-10, 10, -10, 10]):
+    def __init__(self, start, goal, obstacles, max_dist=0.5, max_iter=500, map=[-10, 10, -10, 10]):
         self.start = Node(*start)
         self.goal = Node(*goal)
         self.obstacles = obstacles  # bottom left(x, y) and (width, height)
@@ -20,7 +20,7 @@ class RRT:
         self.nodes = [self.start]
         self.num_nodes = 1
         self.iter = 0
-        self.goal_rate = 0.05
+        self.goal_rate = 0.01
         self.map = map
 
     def add_node(self, q_new, q_near):
@@ -63,18 +63,19 @@ class RRT:
         for i in range(self.max_iter):
             # if i % 100 == 0:
             #     diff = self.num_nodes-nodes
-                # print(diff)
-                # if diff < 40:
-                #     self.max_dist = self.max_dist*1.05
-                # elif diff > 60:
-                #     self.max_dist = self.max_dist*0.95
-                # nodes = self.num_nodes
+            # print(diff)
+            # if diff < 40:
+            #     self.max_dist = self.max_dist*1.05
+            # elif diff > 60:
+            #     self.max_dist = self.max_dist*0.95
+            # nodes = self.num_nodes
             q_rand = self.sample()
             # print(f"{q_rand.x}, {q_rand.y}")
             q_near = self.nearest(q_rand)
             q_new = self.steer(q_rand, q_near)
             if self.collision_free(q_near, q_new):
                 self.add_node(q_new, q_near)
+                # 终止条件：如果goal在steer的范围内直接结束
                 if np.sqrt((q_new.x - self.goal.x)**2 + (q_new.y - self.goal.y)**2) < self.max_dist:
                     self.add_node(self.goal, q_new)
                     break
@@ -88,7 +89,7 @@ class RRT:
         return list(reversed(path))
 
     def plot_tree(self, ax, path=None, map=[-10, 10, -10, 10]):
-        
+
         for o in self.obstacles:
             rect = plt.Rectangle((o[0], o[1]), o[2], o[3], color='gray')
             ax.add_patch(rect)
@@ -104,12 +105,25 @@ class RRT:
         # ax.set_aspect('equal')
         # plt.show()
 
-def in_obs(x,y,obs):
+
+def in_obs(x, y, obs):
     for o in obs:
-        if (x>o[0] and x<o[0]+o[2] and y>o[1] and y<o[1]+o[3]):
+        if (x > o[0] and x < o[0]+o[2] and y > o[1] and y < o[1]+o[3]):
             return True
             break
     return False
+
+
+def rrt_append(path_list, node_list):
+    path = [path_list[0][0]]
+    nodes = [node_list[0][0]]
+    for i in range(2, len(path_list)):
+        path_list[i][0].parent = path_list[i-1][-1]
+        node_list[i][0].parent = node_list[i-1][-1]
+        path.extend(path_list[i][1:])
+        nodes.extend(node_list[i][1:])
+    return path, nodes
+
 
 def is_collision(q1, q2, rect):
     x, y, w, h = rect
@@ -147,75 +161,157 @@ def is_collision(q1, q2, rect):
     # If none of the above conditions were met, then the segment does not intersect the rectangle
     return False
 
+
 def is_in(point, map):
-    if point[0]>map[0] and point[0]<map[1] and point[1]>map[2] and point[1]<map[3]:
+    if point[0] > map[0] and point[0] < map[1] and point[1] > map[2] and point[1] < map[3]:
         return True
     else:
         return False
 
 
-if __name__ == '__main__':
-    w = 18
-    map=[-0.5*w, 0.5*w, -0.5*w, 0.5*w]
-    start = (-7, -7)
-    # goal = (7, 3)
-    goal = (7, 7)
-    # obstacles = [(-6, -7, 3,1), (-5, -3, 6, 1), (0, 2, 3, 2), (3, -4, 2, 6), (-2,-1,2,6), (-3, -5, 8, 0.5)]
-    obstacles = [(-9, -3, 7, 1), (-3, -8, 1, 5), (4, 0, 1, 7),
-                 (8, 4, 1, 3), (5, 4, 3, 1), (-1, 0, 5, 1), (-4, -1, 1, 12)]
-    # obstacles = [(-7.9, -5, 5, 0.1)]
-    path_list=[]
+def generate_temp(start, goal, sub_w):
+    hori = goal[0]-start[0]
+    vert = goal[1]-start[1]
+    right = 1 if (hori > 0) else -1
+    up = 1 if (vert > 0) else -1
+    temp1 = start[0]+sub_w*right
+    temp2 = start[1]+sub_w*up
+
+    temp3 = min(temp1, start[0])
+    temp4 = max(temp1, start[0])
+    temp5 = min(temp2, start[1])
+    temp6 = max(temp2, start[1])
+    
+    # if abs(vert/hori)<0.25:
+    #     temp3-=right*0.5*sub_w
+    #     temp4-=right*0.5*sub_w
+        
+    # if abs(vert/hori)>0.75:
+    #     temp5-=up*0.5*sub_w
+    #     temp6-=up*0.5*sub_w
+
+    xmin = max(-10, temp3)
+    xmax = min(10, temp4)
+    ymin = max(-10, temp5)
+    ymax = min(10, temp6)
+
+    sub_map = [xmin, xmax, ymin, ymax]
+    
+    temp_goal = [np.random.uniform(xmin,xmax),np.random.uniform(ymin,ymax)]
+
+    return temp_goal, sub_map
+
+
+def ours(plot=False, straight=False):
+    w = 20
+    start = (-8, -8)
+    goal = (8, 8)
+    # goal = (-8, -5)
+    # start = (8, 9)
+    # obstacles = [(-9, -3, 7, 1), (-3, -8, 1, 5), (4, 0, 1, 7),
+    #             (8, 4, 1, 3), (5, 4, 3, 1), (-1, 0, 5, 1), (-4, -1, 1, 12)]
+    # obstacles = [(-10,-3,5,1), (-6,-6,1,3), (-6,-10,1,2), (0,7,5,1),(4,4,1,3),(4,0,1,2),(0,0,5,1),(0,1,1,7)]
+    obstacles = [(-7.5, -10, 1, 7), (-7.5, 3, 1, 7),
+                 (6.5, 3, 1, 7), (6.5, -10, 1, 7), (-1, -2, 1, 7),]
+
+    # start = (-2, -2)
+    # goal = (2, 2)
+    # obstacles = [(0,-1,0.5,3)]
+    path_list = []
+    node_list = []
     temp_start = (-999, -999)
-    temp_goal = [0,0]
-    ratio = 0.5
+    temp_goal = [0, 0]
+    ratio = 0.4
+    iter = 0
     sub_w = w*ratio
-    fig, ax = plt.subplots()
+    # fig, ax = plt.subplots()
+    sub_map=[0,0,0,0]
+    time1=time.perf_counter()
     while True:
         if goal == temp_start:
-                break
+            break
         # decide temp start
         if temp_start == (-999, -999):
             temp_start = start
-        left_flag = (temp_start[0]-goal[0])/abs(temp_start[0]-goal[0])
-        up_flag = (temp_start[1]-goal[1])/abs(temp_start[1]-goal[1])
-
-        # select submap
-        sub_map = [temp_start[0]-0.5 * sub_w, temp_start[0]+0.5 * sub_w, temp_start[1]-0.5*sub_w, temp_start[1]+0.5 * sub_w]
-
-        # decide temp  goal
-        end_flag=False
-        while True:
-            
-            if is_in(goal, sub_map):
-                temp_goal = goal
-                end_flag = True
+        # select submap and temp_goal
+        
+        if is_in(goal,sub_map):
+            if temp_goal==goal:
+                while True:        
+                    temp_goal, sub_map=generate_temp(temp_start,goal, sub_w)
+                    if not in_obs(*temp_goal, obstacles):
+                        break
             else:
-                x = np.random.uniform(min(temp_start[0], temp_start[0]-left_flag*0.5*sub_w),max(temp_start[0], temp_start[0]-left_flag*0.5*sub_w))
-                y = np.random.uniform(min(temp_start[1], temp_start[1]-up_flag*0.5*sub_w),max(temp_start[1], temp_start[1]-up_flag*0.5*sub_w))
-                temp_goal=[x,y]
-            if not in_obs(*temp_goal, obstacles):break
-        
-        print(f"new goal:{temp_goal}")
-        
+                temp_goal=goal
+        else:       
+            while True:        
+                temp_goal, sub_map=generate_temp(temp_start,goal, sub_w)
+                if not in_obs(*temp_goal, obstacles):
+                    break
+        # print(f"start:{temp_start},goal:{temp_goal}")
+        # print(f"new goal:{temp_goal}")
+
         # find temp path
-        rrt = RRT(temp_start, temp_goal, obstacles, 0.2, 10000, sub_map)
-        temp_path = rrt.find_path()
+        temp_rrt = RRT(temp_start, temp_goal, obstacles, 0.8, 400, sub_map)
+        if straight:
+            if temp_rrt.collision_free(Node(*temp_start), Node(*temp_goal)):
+                temp_path = [Node(*temp_start), Node(*temp_goal)]
+            else:
+                temp_path = temp_rrt.find_path()
+        else:
+            temp_path = temp_rrt.find_path()
+        iter += temp_rrt.iter
+        
+        node_list.append(temp_rrt.nodes)
         path_list.append(temp_path)
+        # update　更新子起点
+        if temp_rrt.iter == temp_rrt.max_iter-1:
+            # print('get another')
+            # 放弃这个循环中的temp_start，回退一个submap
+            if len(path_list)>1:
+                previous = path_list[-2]
+                temp_start = [previous[0].x, previous[0].y]
+            else:
+                temp_start = start    
+            del  path_list[-2:]
+            # print('back')
+            continue
+        # print('found')
+        
         temp_start = temp_goal
-        rrt.plot_tree(ax, temp_path, sub_map)
+        # print("plot")
+        if plot:
+            temp_rrt.plot_tree(ax, temp_path, sub_map)
+        # print(f"{temp_rrt.iter}, {len(temp_rrt.nodes)}")
+
+    # print('found')
+    time2=time.perf_counter()
+    tolen = 1
+    tonode = 1
+    for path, nodes in zip(path_list, node_list):
+        tolen += len(path)-1
+        tonode += len(nodes)
+    # print(f"Length: {tolen}, Iteration: {iter}, Nodes: {tonode}, Number of submap: {len(path_list)}")
+
+    # print(f"Number of submap: {len(path_list)}")
+
+    # ax.set_aspect('equal')
+    # ax.set_xlim(-10, 10)
+    # ax.set_ylim(-10, 10)
+    # plt.title(f"Iteration: {iter}, Nodes: {tonode}, Number of submap: {len(path_list)}")
+    # plt.show()
+    return (iter, tonode, time2-time1)
+
+
+if __name__ == '__main__':
+    fig, ax = plt.subplots()
+    iter, tonode, _=ours(True)
+    print(f"Iteration: {iter}, Nodes: {tonode}")
+
+    # print(f"Number of submap: {len(path_list)}")
+
     ax.set_aspect('equal')
-    ax.set_xlim(-10,10)
-    ax.set_ylim(-10,10)
+    ax.set_xlim(-10, 10)
+    ax.set_ylim(-10, 10)
+    plt.title(f"Iteration: {iter}, Nodes: {tonode}")
     plt.show()
-        
-    print(len(path_list))
-    # for pat in path:
-    #     print("Length of sublist:", len(pat))
-    #     rrt.plot_tree(path=pat)
-    # print(f'Iteration: {rrt.iter}, Node Number: {rrt.num_nodes}')
-    # rrt = RRT(start, goal, obstacles, 0.2, 10000, map, ax)
-    # path=[Node(*start)]
-    # for pat in path_list:
-    #     path.extend(pat[1:])
-        
-    # rrt.plot_tree(path=path, map=map)
