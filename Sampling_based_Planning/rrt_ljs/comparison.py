@@ -2,14 +2,14 @@ from realtime_rrt import basic_rrt
 from realtime_rrt_sliding_window import ours
 import matplotlib.pyplot as plt
 
-def compare1(n):
+def compare1(obs,n):
     iter=[[],[]]
     node=[[],[]]
     time=[[],[]]
     for i in range(1,n+1):
-        a,b,t1 = basic_rrt()
+        a,b,t1 = basic_rrt(obs)
         print(f"basic:{i}")
-        c,d,t2 = ours()
+        c,d,t2 = ours(obs)
         print(f"ours:{i}")
         
         iter[0].append(a)
@@ -32,34 +32,36 @@ def compare1(n):
     ax1 = fig1.add_subplot(111)
 
     # 绘制图1
-    ax1.plot(i, time[0])
-    ax1.plot(i, time[1])
+    ax1.plot(i, time[0], label='rrt')
+    ax1.plot(i, time[1], label='ours')
     ax1.set_title('Time')
     ax1.set_xlabel('X Axis 1')
     ax1.set_ylabel('Y Axis 1')
+    plt.legend()
 
     # 创建画布2和坐标轴对象2
     fig2 = plt.figure()
     ax2 = fig2.add_subplot(111)
 
     # 绘制图2
-    plt.plot(i, node[0])
-    plt.plot(i, node[1])
+    plt.plot(i, node[0], label='rrt')
+    plt.plot(i, node[1], label='ours')
     ax2.set_title('Node')
     ax2.set_xlabel('X Axis 2')
     ax2.set_ylabel('Y Axis 2')
+    plt.legend()
 
     # 显示图形
     plt.show()
     
-def compare2(n):
+def compare2(obs,n):
     iter=[[],[]]
     node=[[],[]]
     time=[[],[]]
     for i in range(1,n+1):
-        a,b,t1 = ours(straight=True)
+        a,b,t1 = ours(obs, straight=True)
         print(f"basic:{i}")
-        c,d,t2 = ours()
+        c,d,t2 = ours(obs)
         print(f"ours:{i}")
         
         iter[0].append(a)
@@ -82,12 +84,12 @@ def compare2(n):
     ax1 = fig1.add_subplot(111)
 
     # 绘制图1
-    ax1.plot(i, time[0])
-    ax1.plot(i, time[1])
+    ax1.plot(i, time[0], label='straight')
+    ax1.plot(i, time[1], label='regular')
     ax1.set_title('Time')
     ax1.set_xlabel('X Axis 1')
     ax1.set_ylabel('Y Axis 1')
-
+    plt.legend()
     # 创建画布2和坐标轴对象2
     fig2 = plt.figure()
     ax2 = fig2.add_subplot(111)
@@ -100,12 +102,14 @@ def compare2(n):
     ax2.set_ylabel('Y Axis 2')
 
     # 显示图形
+    
     plt.show()
     
     
 
 if __name__ == '__main__':
-    compare2(10)
+    obstacles = [(-7.5, -10, 1, 7), (-7.5, 3, 1, 7), (6.5, 3, 1, 7), (6.5, -10, 1, 7), (-1, -2, 1, 7)]
+    compare1(obstacles,2)
 
 
 

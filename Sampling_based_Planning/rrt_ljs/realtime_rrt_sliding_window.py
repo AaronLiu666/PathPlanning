@@ -202,17 +202,14 @@ def generate_temp(start, goal, sub_w):
     return temp_goal, sub_map
 
 
-def ours(plot=False, straight=False):
+def ours(obs, plot=False, straight=False):
     w = 20
     start = (-8, -8)
     goal = (8, 8)
-    # goal = (-8, -5)
-    # start = (8, 9)
-    # obstacles = [(-9, -3, 7, 1), (-3, -8, 1, 5), (4, 0, 1, 7),
-    #             (8, 4, 1, 3), (5, 4, 3, 1), (-1, 0, 5, 1), (-4, -1, 1, 12)]
-    # obstacles = [(-10,-3,5,1), (-6,-6,1,3), (-6,-10,1,2), (0,7,5,1),(4,4,1,3),(4,0,1,2),(0,0,5,1),(0,1,1,7)]
-    obstacles = [(-7.5, -10, 1, 7), (-7.5, 3, 1, 7),
-                 (6.5, 3, 1, 7), (6.5, -10, 1, 7), (-1, -2, 1, 7),]
+    obstacles = obs
+    # obstacles=[(0,1,2,3)]
+    # obstacles = [(-7.5, -10, 1, 7), (-7.5, 3, 1, 7),
+    #              (6.5, 3, 1, 7), (6.5, -10, 1, 7), (-1, -2, 1, 7),]
 
     # start = (-2, -2)
     # goal = (2, 2)
@@ -221,7 +218,7 @@ def ours(plot=False, straight=False):
     node_list = []
     temp_start = (-999, -999)
     temp_goal = [0, 0]
-    ratio = 0.4
+    ratio = 0.6
     iter = 0
     sub_w = w*ratio
     # fig, ax = plt.subplots()
@@ -252,7 +249,7 @@ def ours(plot=False, straight=False):
         # print(f"new goal:{temp_goal}")
 
         # find temp path
-        temp_rrt = RRT(temp_start, temp_goal, obstacles, 0.8, 400, sub_map)
+        temp_rrt = RRT(temp_start, temp_goal, obstacles, 0.5, 500, sub_map)
         if straight:
             if temp_rrt.collision_free(Node(*temp_start), Node(*temp_goal)):
                 temp_path = [Node(*temp_start), Node(*temp_goal)]
@@ -305,7 +302,7 @@ def ours(plot=False, straight=False):
 
 if __name__ == '__main__':
     fig, ax = plt.subplots()
-    iter, tonode, _=ours(True)
+    iter, tonode, _=ours([(-7.5, -10, 1, 7), (-7.5, 3, 1, 7), (6.5, 3, 1, 7), (6.5, -10, 1, 7), (-1, -2, 1, 7),], True,True)
     print(f"Iteration: {iter}, Nodes: {tonode}")
 
     # print(f"Number of submap: {len(path_list)}")

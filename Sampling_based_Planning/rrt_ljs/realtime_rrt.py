@@ -132,18 +132,19 @@ def is_collision(q1, q2, rect):
     return False
 
 
-def basic_rrt(plot=False):
+def basic_rrt(obs, plot=False):
     time1 = time.perf_counter()
     start = (-8, -8)
     goal = (8, 8)
-    # obstacles = [(-6, -7, 3,1), (-5, -3, 6, 1), (0, 2, 3, 2), (3, -4, 2, 6), (-2,-1,1,6), (-3, -5, 7, 0.1)]
-    # obstacles = [(-7.9, -5, 5, 0.1)]
-    # obstacles = [(-10,-3,5,1), (-6,-6,1,3), (-6,-10,1,2), (0,7,5,1),(4,4,1,3),(4,0,1,2),(0,0,5,1),(0,1,1,7)]
-    # obstacles = [(-9, -3, 7, 1), (-3, -8, 1, 5), (4, 0, 1, 7),
-    #             (8, 4, 1, 3), (5, 4, 3, 1), (-1, 0, 5, 1), (-4, -1, 1, 12)]
-    obstacles = [(-7.5, -10, 1, 7), (-7.5, 3, 1, 7),
-                 (6.5, 3, 1, 7), (6.5, -10, 1, 7), (-1, -2, 1, 7),]
-    rrt = RRT(start, goal, obstacles, max_dist=0.8)
+    # 左下角(x,y,w,h)
+    # obstacles = [(-7.5, -10, 1, 7), (-7.5, 3, 1, 7),
+    #              (6.5, 3, 1, 7), (6.5, -10, 1, 7), (-1, -2, 1, 7),]
+    obstacles=obs
+    
+    
+    
+    
+    rrt = RRT(start, goal, obstacles, max_dist=0.5)
     path = rrt.find_path()
     if plot:
         print(f'Iteration: {rrt.iter}, Node Number: {rrt.num_nodes}')
@@ -153,5 +154,5 @@ def basic_rrt(plot=False):
     
     return (rrt.iter, rrt.num_nodes,time2-time1)
 if __name__ == '__main__':
-    basic_rrt(True)
+    basic_rrt([(-7.5, -10, 1, 7), (-7.5, 3, 1, 7), (6.5, 3, 1, 7), (6.5, -10, 1, 7), (-1, -2, 1, 7),], True)
 
